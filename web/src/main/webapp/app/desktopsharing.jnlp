@@ -1,0 +1,33 @@
+TS: 2014-03-31 13:56:01
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="$$codebase" href="$$codebase$$name">
+  <information>
+    <title>Desktop Sharing</title>
+    <vendor>BigMarker</vendor>
+    <description>Desktop sharing application</description>
+	<homepage href="http://bigmarker.com/" />
+    <icon href="icon.png" width="72" height="72" kind="default" />
+  </information>
+  <update check="background" policy="always"/>
+  <resources>
+    <j2se version="1.6+" />
+    <jar href="deskshare.jar" main="true" />
+    <jar href="slf4j-api-1.7.5.jar" />
+    <jar href="logback-classic-1.0.13.jar" />
+    <jar href="logback-core-1.0.13.jar" />
+    <jar href="xuggle-xuggler-5.4.jar" />
+  </resources>
+  <resources os="Windows">    
+    <jar href="xuggle-xuggler-5.4-win-native.jar"/>
+  </resources>
+  <resources os="Mac\ OS\ X">    
+    <jar href="xuggle-xuggler-5.4-osx-native.jar"/>
+  </resources>
+  <resources os="Linux">    
+    <jar href="xuggle-xuggler-5.4-lnx-native.jar"/>
+  </resources>
+  <application-desc name="Deskshare" main-class="com.bigmarker.client.deskshare.Main" />
+  <security>
+    <all-permissions />
+  </security>
+</jnlp>

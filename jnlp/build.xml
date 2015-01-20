@@ -1,0 +1,383 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project name="deskshare" basedir="." default="release-prod">
+
+	<description>Desktop screen sharing build file</description>
+
+    <property environment="env"/>
+	
+	<property name="src" location="src/main/java" />
+	<property name="res" location="src/main/resources" />
+	<property name="build" location="classes" />
+	<property name="dist" location="dist" />
+	<property name="lib" location="lib" />
+
+	<!-- Allow for user overriden props -->
+    <property name="user.properties" value="${basedir}/local.properties"/>
+    <property file="${user.properties}"/>
+
+	<!-- Handle windows need for extensions -->
+    <condition property="default.tool.path" value="${env.JAVA_HOME}/bin/" else="/usr/bin/">
+        <os family="windows"/>
+    </condition>
+	
+	<path id="lib.path">
+		<pathelement location="${lib}" />
+		<fileset dir="${lib}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<taskdef classname="proguard.ant.ProGuardTask" classpath="proguard/proguard.jar" name="proguard" />
+
+	<target name="init" depends="clean" description="Initialise ant">
+		<tstamp />
+		<mkdir dir="${build}" />
+		<mkdir dir="${dist}" />
+	</target>
+
+	<target name="compile" depends="init" description="Compile">
+		<javac destdir="${build}" optimize="true" debug="false" includeantruntime="false">
+			<classpath refid="lib.path" />
+			<src path="${src}" />
+			<include name="com/**" />
+			<include name="fi/**" />
+		</javac>
+	</target>
+	
+	<!-- Adds special security related props to the manifest -->
+	<macrodef name="appendmf">
+		<attribute name="jar" />
+		<sequential>
+			<echo>Appending manifest for: @{jar}</echo>
+			<jar update="true" file="@{jar}">
+				<manifest>
+					<attribute name="Trusted-Only" value="true"/>
+					<attribute name="Permissions" value="all-permissions"/>
+					<attribute name="Codebase" value="*"/>          
+					<attribute name="Application-Name" value="${ant.project.name}" />  
+				</manifest>
+			</jar>
+		</sequential>	
+	</macrodef>
+	
+	<!-- Adds additional props to the library jars to prevent security messages 
+	http://docs.oracle.com/javase/7/docs/technotes/guides/jweb/security/manifest.html
+	-->
+	<target name="update-manifest" depends="copy-libs">
+		<appendmf jar="${dist}/slf4j-api-1.7.5.jar" />
+        <appendmf jar="${dist}/logback-classic-1.0.13.jar" />
+        <appendmf jar="${dist}/logback-core-1.0.13.jar" />
+        <appendmf jar="${dist}/xuggle-xuggler-5.4.jar" />
+	</target> 
+
+	<target name="copy-libs" description="Copy libs to dist">
+		<copy todir="${dist}" overwrite="true">
+            <fileset dir="${lib}">
+				<include name="icon.png" />
+                <include name="slf4j-api-1.7.5.jar" />
+                <include name="logback-classic-1.0.13.jar" />
+                <include name="logback-core-1.0.13.jar" />
+                <include name="xuggle-xuggler-5.4.jar" />                    	
+           	</fileset>
+		</copy>
+		<copy todir="${dist}" overwrite="true">
+            <fileset dir="${res}">
+				<include name="icon.ico" />
+				<include name="icon_16x16x32.png" />
+				<include name="icon.png" />
+				<include name="icon.icns" />
+           	</fileset>
+		</copy>
+	</target>
+	
+	<target name="package-native-jars" depends="compile" description="Package native libs">
+		<!-- copy extractor class to native dir location -->
+        <mkdir dir="${lib}/native/com/bigmarker/util" />
+        <copy todir="${lib}/native">
+            <fileset dir="${build}">
+                <include name="**/LibraryExtractor.class" />
+            </fileset>
+		</copy>
+		<!-- create native all os jar -->
+        <jar basedir="${lib}/native" jarfile="${dist}/xuggle-xuggler-5.4-native.jar">
+            <manifest>
+                <attribute name="Application-Name" value="Xuggler native libs" />         
+				<attribute name="Trusted-Only" value="true"/>
+				<attribute name="Permissions" value="all-permissions"/>
+				<attribute name="Codebase" value="*"/>          
+                <section name="build">
+                    <attribute name="Build-Date" value="${DSTAMP} ${TSTAMP}" />
+                    <attribute name="Built-By" value="${user.name}" />
+                    <attribute name="Built-With" value="${os.name} ${os.version} ${os.arch}" />
+                </section>
+            </manifest>
+        </jar>	
+		<!-- create native linux jar -->
+        <jar basedir="${lib}/native" jarfile="${dist}/xuggle-xuggler-5.4-lnx-native.jar">
+            <manifest>
+                <attribute name="Application-Name" value="Xuggler native libs" />         
+				<attribute name="Trusted-Only" value="true"/>
+				<attribute name="Permissions" value="all-permissions"/>
+				<attribute name="Codebase" value="*"/>          
+                <section name="build">
+                    <attribute name="Build-Date" value="${DSTAMP} ${TSTAMP}" />
+                    <attribute name="Built-By" value="${user.name}" />
+                    <attribute name="Built-With" value="${os.name} ${os.version} ${os.arch}" />
+                </section>
+            </manifest>
+            <exclude name="**/*.dll" />               
+            <exclude name="**/*.dylib" />
+        </jar>	
+		<!-- create native all os jar -->
+        <jar basedir="${lib}/native" jarfile="${dist}/xuggle-xuggler-5.4-osx-native.jar">
+            <manifest>
+                <attribute name="Application-Name" value="Xuggler native libs" />         
+				<attribute name="Trusted-Only" value="true"/>
+				<attribute name="Permissions" value="all-permissions"/>
+				<attribute name="Codebase" value="*"/>          
+                <section name="build">
+                    <attribute name="Build-Date" value="${DSTAMP} ${TSTAMP}" />
+                    <attribute name="Built-By" value="${user.name}" />
+                    <attribute name="Built-With" value="${os.name} ${os.version} ${os.arch}" />
+                </section>
+            </manifest>
+            <exclude name="**/*.so" />               
+            <exclude name="**/*.dll" />               
+        </jar>	
+        <!-- create native windows jar -->
+        <jar basedir="${lib}/native" jarfile="${dist}/xuggle-xuggler-5.4-win-native.jar">
+            <manifest>
+                <attribute name="Application-Name" value="Xuggler native libs" />         
+				<attribute name="Trusted-Only" value="true"/>
+				<attribute name="Permissions" value="all-permissions"/>
+				<attribute name="Codebase" value="*"/>          
+                <section name="build">
+                    <attribute name="Build-Date" value="${DSTAMP} ${TSTAMP}" />
+                    <attribute name="Built-By" value="${user.name}" />
+                    <attribute name="Built-With" value="${os.name} ${os.version} ${os.arch}" />
+                </section>
+            </manifest>
+            <exclude name="**/*.so" />               
+            <exclude name="**/*.dylib" />               
+        </jar>	
+    </target>
+	
+	<target name="package-client" depends="package-native-jars" description="Package app">
+        <copy todir="${build}" filtering="true">
+            <fileset dir="${src}">
+                <exclude name="*.properties"/>
+                <exclude name="*.jpg"/>
+                <exclude name="*.png"/>
+                <exclude name="*.gif"/>
+            </fileset>
+        </copy>
+        <copy todir="${build}" overwrite="true">
+            <fileset dir="${res}">
+                <include name="*.properties" />
+				<include name="icon.ico" />
+				<include name="icon_16x16x32.png" />
+				<include name="icon.png" />
+				<include name="icon.icns" />
+            </fileset>
+        </copy>		
+	    <manifestclasspath property="jar.classpath" jarfile="${lib}/${ant.project.name}.jar" maxParentLevels="0">
+	        <classpath refid="lib.path"/>
+	    </manifestclasspath>
+		<jar basedir="${build}" jarfile="${dist}/${ant.project.name}.jar">
+			<manifest>
+                <attribute name="Application-Name" value="${ant.project.name}" />         
+				<attribute name="Trusted-Only" value="true"/>
+				<attribute name="Permissions" value="all-permissions"/>
+				<attribute name="Codebase" value="*"/>          
+                <attribute name="Class-Path" value="${jar.classpath}" />
+				<attribute name="Main-Class" value="com.bigmarker.client.deskshare.Main" />
+                <section name="build">
+                    <attribute name="Build-Date" value="${DSTAMP} ${TSTAMP}" />
+                    <attribute name="Built-By" value="${user.name}" />
+                    <attribute name="Built-With" value="${os.name} ${os.version} ${os.arch}" />
+                </section>
+			</manifest>
+            <exclude name="package*cache/" />               
+            <exclude name="**/*.jnlp" />               
+            <exclude name="**/*Test*.class" />          
+		    <exclude name="**/LibraryExtractor.class" />               
+            <exclude name="**/native/**" />            
+		</jar>
+	</target>
+
+	<target name="compress" depends="package-client" description="Package obfuscated library">
+		<proguard>	
+			-libraryjars ${java.home}/lib/rt.jar
+			-injars      ${dist}/${ant.project.name}.jar
+			-outjar      ${dist}/${ant.project.name}-obf.jar
+			-renamesourcefileattribute SourceFile
+			-keepattributes InnerClasses,SourceFile
+			-overloadaggressively
+			-keep public class * {    public protected *;}
+		</proguard>
+	</target>
+
+	<target name="sign-jars" depends="update-manifest,get-password" description="Signs jars with the keystore">
+		<echo level="info">Signing JARS...</echo>
+		<signjar jar="${dist}/${ant.project.name}.jar" keystore="${keystore}" alias="${keystore.alias}"	storepass="${keystore.password}" />
+		<signjar jar="${dist}/slf4j-api-1.7.5.jar" keystore="${keystore}" alias="${keystore.alias}"	storepass="${keystore.password}" />
+        <signjar jar="${dist}/logback-classic-1.0.13.jar" keystore="${keystore}" alias="${keystore.alias}" storepass="${keystore.password}" />
+        <signjar jar="${dist}/logback-core-1.0.13.jar" keystore="${keystore}" alias="${keystore.alias}"	storepass="${keystore.password}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4.jar" keystore="${keystore}" alias="${keystore.alias}" storepass="${keystore.password}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4-native.jar" keystore="${keystore}" alias="${keystore.alias}" storepass="${keystore.password}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4-lnx-native.jar" keystore="${keystore}" alias="${keystore.alias}" storepass="${keystore.password}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4-osx-native.jar" keystore="${keystore}" alias="${keystore.alias}" storepass="${keystore.password}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4-win-native.jar" keystore="${keystore}" alias="${keystore.alias}" storepass="${keystore.password}" />
+    </target>
+	
+	<target name="get-password" description="Prompts for password for keystore">
+		<input addproperty="keystore.password">Password for keystore:</input>
+		<echo level="verbose">password = ${keystore.password}</echo>
+	</target>
+	
+	<!-- STEP 1 -->
+    <target name="create-signing-key" description="Keystore Generator">
+		<!-- keytool -genkey -alias codesigncert -keypass <yourkeypwd> -keyalg RSA -keysize 2048 -dname "CN=displayname,O=companyname,C=US,ST=state,L=city" -keystore codesignstore -storepass <yourstorepwd>	-->
+        <input message="Certificate Validity" addproperty="keystore.validity" defaultvalue="365"/>
+        <input message="Common Name" addproperty="keystore.dname.cn" defaultvalue="BigMarker"/>
+        <input message="Organisation Unit" addproperty="keystore.dname.ou" defaultvalue="Development"/>
+        <input message="Organisation" addproperty="keystore.dname.o" defaultvalue="BigMarker"/>
+        <input message="Location" addproperty="keystore.dname.l" defaultvalue="Chicago"/>
+        <input message="State" addproperty="keystore.dname.st" defaultvalue="IL"/>
+        <input message="Country" addproperty="keystore.dname.c" defaultvalue="US"/>
+        <genkey alias="${keystore.alias}" keystore="${keystore}" keypass="${keystore.password}" storepass="${keystore.password}" validity="${keystore.validity}" keysize="2048" keyalg="RSA">
+            <dname>
+                <param name="CN" value="${keystore.dname.cn}"/>
+                <param name="OU" value="${keystore.dname.ou}"/>
+                <param name="O" value="${keystore.dname.o}"/>
+                <param name="L" value="${keystore.dname.l}"/>
+                <param name="ST" value="${keystore.dname.st}"/>
+                <param name="C" value="${keystore.dname.c}"/>
+            </dname>
+        </genkey>
+    </target>	
+
+	<!-- STEP 2 -->
+	<target name="create-csr" description="Create CSR">
+	    <!-- keytool -certreq -v -alias codesigncert -file mycsr.pem -keystore codesignstore -->
+        <exec executable="${default.tool.path}keytool" outputproperty="keytool.out">
+			<arg line="-certreq" />
+			<arg line="-alias ${keystore.alias}" />
+            <arg line="-file csr.pem" />
+			<arg line="-keystore ${keystore}" />
+			<arg line="-keypass ${keystore.password}" />
+			<arg line="-storepass ${keystore.password}" />
+			<arg line="-v" /> 
+		</exec>		
+		<echo>${keytool.out}</echo>
+	</target>
+
+	<!-- STEP 3 -->
+	<target name="import-gd-chain" description="Imports certificate chain into keystore">
+		<!-- Special process for GoDaddy cert use -->
+        <exec executable="${default.tool.path}keytool" outputproperty="keytool.out">
+			<arg line="-import" />
+			<arg line="-trustcacerts" />
+			<arg line="-keystore ${keystore}" />
+			<arg line="-alias root" />
+            <arg line="-file gd-class2-root.crt" />
+			<arg line="-keypass ${keystore.password}" />
+			<arg line="-storepass ${keystore.password}" />
+			<arg line="-noprompt" /> 
+			<arg line="-v" /> 
+		</exec>		
+		<echo>${keytool.out}</echo>
+        <exec executable="${default.tool.path}keytool" outputproperty="keytool2.out">
+			<arg line="-import" />
+			<arg line="-trustcacerts" />
+			<arg line="-keystore ${keystore}" />
+			<arg line="-alias cross" />
+            <arg line="-file gd_cross_intermediate.crt" />
+			<arg line="-keypass ${keystore.password}" />
+			<arg line="-storepass ${keystore.password}" />
+			<arg line="-noprompt" /> 
+			<arg line="-v" /> 
+		</exec>		
+		<echo>${keytool2.out}</echo>
+        <exec executable="${default.tool.path}keytool" outputproperty="keytool3.out">
+			<arg line="-import" />
+			<arg line="-trustcacerts" />
+			<arg line="-keystore ${keystore}" />
+			<arg line="-alias intermediate" />
+            <arg line="-file gd_intermediate.crt" />
+			<arg line="-keypass ${keystore.password}" />
+			<arg line="-storepass ${keystore.password}" />
+			<arg line="-noprompt" /> 
+			<arg line="-v" /> 
+		</exec>		
+		<echo>${keytool3.out}</echo>
+	</target>
+	
+	<!-- STEP 4 -->
+	<target name="import-cert" description="Imports certificate into keystore">
+		<!-- keytool -import -trustcacerts -keystore codesignstore -storepass <yourstorepwd> -alias codesigncert -file mycert.cer -->
+        <exec executable="${default.tool.path}keytool" outputproperty="keytool.out">
+			<arg line="-import" />
+			<arg line="-trustcacerts" />
+			<arg line="-keystore ${keystore}" />
+			<arg line="-alias ${keystore.alias}" />
+            <arg line="-file bm.cer" />
+			<arg line="-keypass ${keystore.password}" />
+			<arg line="-storepass ${keystore.password}" />
+			<arg line="-noprompt" /> 
+			<arg line="-v" /> 
+		</exec>		
+		<echo>${keytool.out}</echo>
+	</target>
+	
+	<!-- Sign jar with Certificate using pkcs12 file -->
+	<target name="check-certificate">
+        <exec executable="${default.tool.path}keytool" outputproperty="cert.info">
+			<arg line="-list" />
+			<arg line="-storetype ${keystore.type}" /> <!-- set to pkcs12 if using cert directly or (.pfx .p12) -->
+            <arg line="-keystore ${keystore}" />
+			<arg line="-storepass ${keystore.password}" />
+			<arg line="-v" /> 
+		</exec>
+		<echo>Certificate info: ${cert.info}</echo>
+    </target>
+		
+	<target name="sign-jars-cert" depends="update-manifest,check-certificate" description="Signs jars with the certificate">		
+		<signjar jar="${dist}/${ant.project.name}.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+		<signjar jar="${dist}/slf4j-api-1.7.5.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+        <signjar jar="${dist}/logback-classic-1.0.13.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+        <signjar jar="${dist}/logback-core-1.0.13.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4-native.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4-lnx-native.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4-osx-native.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+        <signjar jar="${dist}/xuggle-xuggler-5.4-win-native.jar" storetype="${keystore.type}" keystore="${keystore}" storepass="${keystore.password}" alias="${keystore.alias}" />
+    </target>	
+	
+	<target name="clean" description="Clean up">
+		<delete dir="${build}" />
+		<delete dir="${temp}" />
+	</target>
+	
+	<target name="javadoc" description="Generate javadoc documentation">
+		<mkdir dir="${doc}" />
+		<javadoc Author="true" DocTitle="Prototype" Overview="${src}/Overview.html" Use="true" Version="true" Windowtitle="Prototype" access="private" destdir="${doc}" packagenames="com.bigmarker.*" sourcepath="${src}">
+			<bottom>
+				<![CDATA[<i>Copyright &#169; 2014 BigMarker All Rights Reserved.</i>]]>
+      		</bottom>
+			<group packages="com.bigmarker.client.deskshare" title="Deskshare" />
+		</javadoc>
+	</target>
+
+	<target name="release-prod" depends="package-client,sign-jars-cert" description="Release for Production" />
+	
+	<target name="release" depends="package-client,sign-jars" description="Release">
+	<!--
+	    <copy todir="${dist}" overwrite="true">
+	        <fileset dir="www" />
+	    </copy>
+	-->
+	</target>
+
+</project>
+

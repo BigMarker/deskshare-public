@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE web-app
+    PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+    "http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app>
+
+  <servlet>
+    <servlet-name>JnlpDownloadServlet</servlet-name>
+    <servlet-class>com.bigmarker.jnlp.servlet.JnlpDownloadServlet</servlet-class>
+    <init-param>
+        <param-name>logLevel</param-name>
+        <param-value>DEBUG</param-value>
+    </init-param>
+    <init-param>
+        <param-name>logPath</param-name>
+        <param-value>/logs/jnlpdownloadservlet.log</param-value>
+    </init-param>   
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>JnlpDownloadServlet</servlet-name>
+    <url-pattern>*.jnlp</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>JnlpDownloadServlet</servlet-name>
+    <url-pattern>*.jar</url-pattern>
+  </servlet-mapping>
+  
+    <mime-mapping>
+        <extension>jnlp</extension>
+        <mime-type>application/x-java-jnlp-file</mime-type>
+    </mime-mapping>  
+    
+    <mime-mapping>
+        <extension>jar</extension>
+        <mime-type>application/x-java-archive</mime-type>
+    </mime-mapping>  
+    
+    <mime-mapping>
+        <extension>jardiff</extension>
+        <mime-type>application/x-java-archive-diff</mime-type>
+    </mime-mapping>  
+
+    <mime-mapping>
+        <extension>bmds</extension>
+        <mime-type>application/x-bigmarker-deskshare</mime-type>
+    </mime-mapping>  
+
+</web-app>
